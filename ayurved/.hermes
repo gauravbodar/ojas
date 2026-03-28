@@ -1,0 +1,35 @@
+# Hermes Agent Project Configuration
+# https://github.com/NousResearch/hermes-agent
+
+project:
+  name: ojas-health
+  description: "Ayurveda-powered personalised health platform"
+
+workspace:
+  root: .
+  apps: ./apps
+  packages: ./packages
+  docs: ./docs
+  scripts: ./scripts
+  config: ./config
+
+agent:
+  model: openai/gpt-4o-mini
+  toolsets:
+    - terminal
+    - file
+    - web
+    - git
+    - code_execution
+  memory:
+    persist: true
+  session:
+    persist: true
+
+context_files:
+  - README.md
+  - docs/
+
+environment:
+  node_version: "20"
+  package_manager: npm
