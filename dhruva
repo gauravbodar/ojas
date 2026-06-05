@@ -1,0 +1,1790 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dhruva Wealth OS — Agent Architecture & Execution</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=JetBrains+Mono:wght@300;400;500;600&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+–gold: #B8973A;
+–gold-light: #D4AF6A;
+–gold-pale: rgba(184,151,58,0.08);
+–obsidian: #080809;
+–charcoal: #111114;
+–graphite: #18181D;
+–panel: #1C1C22;
+–border: rgba(184,151,58,0.12);
+–border-dim: rgba(255,255,255,0.05);
+–mist: #7878888;
+–smoke: #606070;
+–ivory: #EDE8DE;
+–white: #F8F6F0;
+–teal: #3DC9C0;
+–rose: #E07878;
+–amber: #F0C040;
+–blue: #5890D8;
+–green: #58B878;
+–mono: ‘JetBrains Mono’, monospace;
+–serif: ‘Cormorant Garamond’, serif;
+–sans: ‘Outfit’, sans-serif;
+}
+
+html { scroll-behavior: smooth; }
+body {
+background: var(–obsidian);
+color: var(–ivory);
+font-family: var(–mono);
+font-size: 12px;
+line-height: 1.6;
+min-height: 100vh;
+}
+
+/* GRAIN */
+body::before {
+content: ‘’;
+position: fixed; inset: 0;
+background-image: url(“data:image/svg+xml,%3Csvg viewBox=‘0 0 200 200’ xmlns=‘http://www.w3.org/2000/svg’%3E%3Cfilter id=‘n’%3E%3CfeTurbulence type=‘fractalNoise’ baseFrequency=‘0.85’ numOctaves=‘4’/%3E%3C/filter%3E%3Crect width=‘100%25’ height=‘100%25’ filter=‘url(%23n)’ opacity=‘0.035’/%3E%3C/svg%3E”);
+pointer-events: none; z-index: 999; opacity: 0.7;
+}
+
+/* ── NAV ── */
+nav {
+position: sticky; top: 0; z-index: 100;
+background: rgba(8,8,9,0.95);
+backdrop-filter: blur(12px);
+border-bottom: 1px solid var(–border);
+display: flex; align-items: center; gap: 0;
+padding: 0 40px;
+overflow-x: auto;
+}
+
+.nav-brand {
+font-family: var(–serif);
+font-size: 16px;
+color: var(–gold);
+padding: 16px 0;
+margin-right: 32px;
+white-space: nowrap;
+flex-shrink: 0;
+}
+
+.nav-tab {
+padding: 16px 20px;
+font-size: 10px;
+letter-spacing: 3px;
+text-transform: uppercase;
+color: #606070;
+cursor: pointer;
+border-bottom: 2px solid transparent;
+transition: all 0.2s;
+white-space: nowrap;
+flex-shrink: 0;
+user-select: none;
+}
+
+.nav-tab:hover { color: var(–ivory); }
+.nav-tab.active {
+color: var(–gold);
+border-bottom-color: var(–gold);
+}
+
+/* ── SECTIONS ── */
+.section { display: none; padding: 48px 40px 80px; }
+.section.active { display: block; }
+
+/* ── HEADER ── */
+.page-header {
+margin-bottom: 40px;
+padding-bottom: 32px;
+border-bottom: 1px solid var(–border);
+}
+
+.eyebrow {
+font-size: 9px; letter-spacing: 4px;
+text-transform: uppercase; color: var(–gold);
+margin-bottom: 12px;
+}
+
+.page-header h1 {
+font-family: var(–serif);
+font-size: clamp(28px, 4vw, 48px);
+font-weight: 300; color: var(–white);
+line-height: 1.1; margin-bottom: 8px;
+}
+
+.page-header h1 em { font-style: italic; color: var(–gold-light); }
+
+.page-header p {
+font-size: 12px; color: #606070;
+max-width: 700px; line-height: 1.8;
+}
+
+/* ── TCF BANNER ── */
+.tcf-banner {
+display: grid;
+grid-template-columns: 1fr 1fr 1fr;
+gap: 1px;
+background: var(–border);
+border: 1px solid var(–border);
+margin-bottom: 48px;
+}
+
+.tcf-cell {
+background: var(–charcoal);
+padding: 24px 28px;
+position: relative;
+overflow: hidden;
+}
+
+.tcf-cell::before {
+content: ‘’;
+position: absolute; top: 0; left: 0; right: 0;
+height: 2px;
+}
+.tcf-cell.t::before { background: var(–blue); }
+.tcf-cell.c::before { background: var(–amber); }
+.tcf-cell.d::before { background: var(–green); }
+
+.tcf-num {
+font-family: var(–serif);
+font-size: 40px; font-weight: 300;
+line-height: 1;
+margin-bottom: 6px;
+}
+.tcf-cell.t .tcf-num { color: rgba(88,144,216,0.2); }
+.tcf-cell.c .tcf-num { color: rgba(240,192,64,0.2); }
+.tcf-cell.d .tcf-num { color: rgba(88,184,120,0.2); }
+
+.tcf-label {
+font-size: 11px; letter-spacing: 2px;
+text-transform: uppercase; font-weight: 600;
+}
+.tcf-cell.t .tcf-label { color: var(–blue); }
+.tcf-cell.c .tcf-label { color: var(–amber); }
+.tcf-cell.d .tcf-label { color: var(–green); }
+
+.tcf-desc {
+font-size: 11px; color: #606070;
+margin-top: 8px; line-height: 1.6;
+}
+
+.tcf-arrow {
+position: absolute; right: 16px; top: 50%;
+transform: translateY(-50%);
+font-size: 20px; color: var(–border);
+font-family: var(–mono);
+}
+
+/* ── ORG CHART ── */
+.org-wrap {
+overflow-x: auto;
+padding-bottom: 16px;
+margin-bottom: 48px;
+}
+
+.org-chart {
+min-width: 800px;
+display: flex;
+flex-direction: column;
+align-items: center;
+gap: 0;
+}
+
+.org-level {
+display: flex;
+justify-content: center;
+gap: 0;
+position: relative;
+width: 100%;
+}
+
+.org-node {
+background: var(–panel);
+border: 1px solid var(–border);
+padding: 16px 20px;
+text-align: center;
+position: relative;
+min-width: 160px;
+max-width: 200px;
+transition: all 0.2s;
+}
+
+.org-node:hover {
+background: var(–graphite);
+border-color: rgba(184,151,58,0.4);
+}
+
+.org-node.principal {
+border-color: var(–gold);
+background: rgba(184,151,58,0.08);
+min-width: 200px;
+}
+
+.org-node.cto { border-top: 3px solid var(–teal); }
+.org-node.cio { border-top: 3px solid var(–amber); }
+.org-node.dev { border-top: 3px solid rgba(88,205,192,0.4); }
+.org-node.qa  { border-top: 3px solid rgba(88,205,192,0.3); }
+.org-node.content  { border-top: 3px solid rgba(240,192,64,0.4); }
+.org-node.outreach { border-top: 3px solid rgba(240,192,64,0.3); }
+
+.node-role {
+font-size: 9px; letter-spacing: 3px;
+text-transform: uppercase; color: #606070;
+margin-bottom: 4px;
+}
+
+.node-title {
+font-family: var(–serif);
+font-size: 16px; color: var(–white);
+margin-bottom: 4px;
+}
+
+.node-model {
+font-size: 9px; color: var(–gold);
+letter-spacing: 1px;
+}
+
+.node-focus {
+font-size: 9px; color: #505060;
+margin-top: 6px; line-height: 1.5;
+}
+
+/* connector lines */
+.connector-v {
+width: 1px;
+background: var(–border);
+margin: 0 auto;
+height: 32px;
+}
+
+.connector-h-wrap {
+display: flex;
+justify-content: center;
+position: relative;
+width: 100%;
+height: 32px;
+}
+
+.connector-h {
+position: absolute;
+top: 0;
+height: 1px;
+background: var(–border);
+}
+
+.connector-down-left, .connector-down-right {
+position: absolute;
+width: 1px;
+top: 0; bottom: 0;
+background: var(–border);
+}
+
+.org-sub-group {
+display: flex;
+gap: 1px;
+background: var(–border);
+border: 1px solid var(–border);
+}
+
+/* ── WORKFLOW DIAGRAM ── */
+.workflow {
+display: flex;
+flex-direction: column;
+gap: 2px;
+margin-bottom: 48px;
+}
+
+.wf-lane {
+display: grid;
+grid-template-columns: 120px 1fr;
+gap: 1px;
+background: var(–border-dim);
+border: 1px solid var(–border-dim);
+min-height: 80px;
+}
+
+.wf-label {
+background: var(–charcoal);
+padding: 16px;
+display: flex;
+flex-direction: column;
+justify-content: center;
+border-right: 1px solid var(–border-dim);
+}
+
+.wf-lane-name {
+font-size: 9px; letter-spacing: 3px;
+text-transform: uppercase; font-weight: 600;
+}
+
+.wf-lane.traffic .wf-lane-name   { color: var(–blue); }
+.wf-lane.convert .wf-lane-name   { color: var(–amber); }
+.wf-lane.deliver .wf-lane-name   { color: var(–green); }
+.wf-lane.infra .wf-lane-name     { color: #606070; }
+
+.wf-body {
+background: var(–charcoal);
+padding: 16px 20px;
+display: flex;
+flex-wrap: wrap;
+gap: 8px;
+align-items: center;
+}
+
+.wf-step {
+display: flex;
+align-items: center;
+gap: 8px;
+}
+
+.wf-box {
+padding: 6px 12px;
+border: 1px solid;
+font-size: 10px;
+white-space: nowrap;
+letter-spacing: 0.5px;
+}
+
+.wf-lane.traffic .wf-box  { border-color: rgba(88,144,216,0.3); color: var(–blue); background: rgba(88,144,216,0.05); }
+.wf-lane.convert .wf-box  { border-color: rgba(240,192,64,0.3); color: var(–amber); background: rgba(240,192,64,0.05); }
+.wf-lane.deliver .wf-box  { border-color: rgba(88,184,120,0.3); color: var(–green); background: rgba(88,184,120,0.05); }
+.wf-lane.infra .wf-box    { border-color: rgba(255,255,255,0.1); color: #606070; background: rgba(255,255,255,0.02); }
+
+.wf-arrow { color: #404050; font-size: 14px; }
+
+/* ── SYSTEM ARCHITECTURE ── */
+.arch-grid {
+display: grid;
+grid-template-columns: 1fr 1fr 1fr;
+gap: 1px;
+background: var(–border-dim);
+border: 1px solid var(–border-dim);
+margin-bottom: 48px;
+}
+
+.arch-layer {
+background: var(–charcoal);
+padding: 24px;
+}
+
+.arch-layer-title {
+font-size: 9px; letter-spacing: 4px;
+text-transform: uppercase; color: var(–gold);
+margin-bottom: 16px;
+padding-bottom: 12px;
+border-bottom: 1px solid var(–border);
+}
+
+.arch-item {
+display: flex;
+gap: 10px;
+margin-bottom: 10px;
+align-items: flex-start;
+}
+
+.arch-dot {
+width: 6px; height: 6px;
+border-radius: 50%;
+margin-top: 5px;
+flex-shrink: 0;
+}
+
+.arch-item-text {
+font-size: 11px;
+line-height: 1.5;
+}
+
+.arch-item-name {
+color: var(–ivory);
+display: block;
+font-weight: 500;
+}
+
+.arch-item-sub {
+color: #505060;
+display: block;
+font-size: 10px;
+}
+
+/* ── AGENT CARDS ── */
+.agent-grid {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 1px;
+background: var(–border);
+border: 1px solid var(–border);
+margin-bottom: 40px;
+}
+
+.agent-card {
+background: var(–charcoal);
+padding: 28px 32px;
+position: relative;
+}
+
+.agent-card::before {
+content: ‘’;
+position: absolute; top: 0; left: 0; right: 0;
+height: 3px;
+}
+
+.agent-card.cto::before { background: var(–teal); }
+.agent-card.cio::before { background: var(–amber); }
+.agent-card.dev::before { background: rgba(88,205,192,0.5); }
+.agent-card.qa::before  { background: rgba(88,205,192,0.3); }
+.agent-card.content::before  { background: rgba(240,192,64,0.5); }
+.agent-card.outreach::before { background: rgba(240,192,64,0.3); }
+
+.agent-header {
+display: flex;
+justify-content: space-between;
+align-items: flex-start;
+margin-bottom: 16px;
+}
+
+.agent-title {
+font-family: var(–serif);
+font-size: 22px; color: var(–white);
+margin-bottom: 2px;
+}
+
+.agent-subtitle {
+font-size: 10px; color: #606070;
+letter-spacing: 1px;
+}
+
+.model-tag {
+padding: 4px 10px;
+border: 1px solid var(–border);
+font-size: 9px;
+letter-spacing: 2px;
+color: var(–gold);
+white-space: nowrap;
+}
+
+.agent-section {
+margin-bottom: 16px;
+}
+
+.agent-section-label {
+font-size: 9px; letter-spacing: 3px;
+text-transform: uppercase; color: #505060;
+margin-bottom: 8px;
+}
+
+.agent-section.t .agent-section-label { color: rgba(88,144,216,0.7); }
+.agent-section.c .agent-section-label { color: rgba(240,192,64,0.7); }
+.agent-section.d .agent-section-label { color: rgba(88,184,120,0.7); }
+
+.tag-list {
+display: flex; flex-wrap: wrap; gap: 6px;
+}
+
+.tag {
+padding: 3px 8px;
+font-size: 10px;
+letter-spacing: 0.5px;
+}
+
+.tag-t { border: 1px solid rgba(88,144,216,0.2); color: rgba(88,144,216,0.8); background: rgba(88,144,216,0.04); }
+.tag-c { border: 1px solid rgba(240,192,64,0.2); color: rgba(240,192,64,0.8); background: rgba(240,192,64,0.04); }
+.tag-d { border: 1px solid rgba(88,184,120,0.2); color: rgba(88,184,120,0.8); background: rgba(88,184,120,0.04); }
+.tag-x { border: 1px solid rgba(255,255,255,0.08); color: #505060; }
+
+.prompt-box {
+background: var(–graphite);
+border: 1px solid var(–border-dim);
+border-left: 2px solid var(–gold);
+padding: 14px 16px;
+font-size: 10px;
+color: #808090;
+line-height: 1.7;
+font-style: italic;
+margin-top: 8px;
+}
+
+.prompt-box strong { color: var(–ivory); font-style: normal; }
+
+/* ── MCP TASKS ── */
+.mcp-section {
+margin-bottom: 40px;
+border: 1px solid var(–border-dim);
+}
+
+.mcp-header {
+display: grid;
+grid-template-columns: 80px 1fr auto;
+align-items: center;
+gap: 0;
+background: var(–panel);
+border-bottom: 1px solid var(–border-dim);
+padding: 0;
+}
+
+.mcp-id {
+padding: 16px;
+font-size: 11px; letter-spacing: 2px;
+color: var(–gold);
+border-right: 1px solid var(–border-dim);
+font-weight: 600;
+}
+
+.mcp-title-wrap {
+padding: 16px 20px;
+}
+
+.mcp-title {
+font-family: var(–serif);
+font-size: 18px; color: var(–white);
+}
+
+.mcp-subtitle {
+font-size: 10px; color: #505060;
+margin-top: 2px;
+}
+
+.mcp-meta {
+padding: 16px;
+text-align: right;
+border-left: 1px solid var(–border-dim);
+min-width: 130px;
+}
+
+.mcp-quarter {
+font-size: 10px; color: var(–gold-light);
+margin-bottom: 4px;
+}
+
+.mcp-owner {
+font-size: 9px; color: #505060;
+letter-spacing: 1px;
+}
+
+.mcp-body {
+display: grid;
+grid-template-columns: 1fr 1fr 1fr;
+gap: 1px;
+background: var(–border-dim);
+}
+
+.mcp-col {
+background: var(–charcoal);
+padding: 20px;
+}
+
+.mcp-col-title {
+font-size: 9px; letter-spacing: 3px;
+text-transform: uppercase; margin-bottom: 14px;
+padding-bottom: 10px;
+border-bottom: 1px solid var(–border-dim);
+}
+
+.mcp-col.t .mcp-col-title { color: var(–blue); }
+.mcp-col.c .mcp-col-title { color: var(–amber); }
+.mcp-col.d .mcp-col-title { color: var(–green); }
+
+.task-item {
+display: flex; gap: 8px;
+margin-bottom: 10px;
+align-items: flex-start;
+}
+
+.task-num {
+font-size: 9px; color: var(–gold);
+flex-shrink: 0; margin-top: 2px;
+font-weight: 600; letter-spacing: 1px;
+min-width: 20px;
+}
+
+.task-text {
+font-size: 11px; color: #808090;
+line-height: 1.5;
+}
+
+.task-text strong { color: var(–ivory); font-weight: 500; }
+.task-text code {
+font-size: 10px; color: var(–teal);
+background: rgba(61,201,192,0.06);
+padding: 1px 4px;
+}
+
+/* ── PAPERCLIP GUIDE ── */
+.step-block {
+margin-bottom: 32px;
+border: 1px solid var(–border-dim);
+}
+
+.step-header {
+display: flex; align-items: center; gap: 0;
+background: var(–panel);
+border-bottom: 1px solid var(–border-dim);
+}
+
+.step-num-box {
+padding: 16px 20px;
+font-family: var(–serif);
+font-size: 28px; font-weight: 300;
+color: rgba(184,151,58,0.3);
+border-right: 1px solid var(–border-dim);
+min-width: 64px;
+text-align: center;
+}
+
+.step-title-wrap {
+padding: 14px 20px;
+}
+
+.step-title {
+font-family: var(–serif);
+font-size: 18px; color: var(–white);
+}
+
+.step-subtitle {
+font-size: 10px; color: #505060;
+margin-top: 2px; letter-spacing: 1px;
+}
+
+.step-agent-badge {
+margin-left: auto;
+padding: 6px 16px;
+font-size: 9px; letter-spacing: 2px;
+text-transform: uppercase;
+margin-right: 16px;
+}
+
+.badge-cto { border: 1px solid rgba(61,201,192,0.3); color: var(–teal); }
+.badge-cio { border: 1px solid rgba(240,192,64,0.3); color: var(–amber); }
+.badge-all { border: 1px solid var(–border); color: #606070; }
+
+.step-body {
+padding: 24px;
+background: var(–charcoal);
+}
+
+.step-instructions {
+display: flex; flex-direction: column; gap: 10px;
+margin-bottom: 20px;
+}
+
+.instruction {
+display: flex; gap: 12px;
+align-items: flex-start;
+}
+
+.ins-marker {
+font-size: 9px; color: var(–gold);
+flex-shrink: 0; margin-top: 3px;
+font-weight: 600; letter-spacing: 1px;
+min-width: 32px;
+}
+
+.ins-text {
+font-size: 12px; color: #909090;
+line-height: 1.6;
+}
+
+.ins-text strong { color: var(–ivory); font-weight: 500; }
+.ins-text code {
+font-size: 11px; color: var(–teal);
+background: rgba(61,201,192,0.06);
+padding: 2px 6px;
+display: inline-block;
+}
+
+.code-block {
+background: #0D0D10;
+border: 1px solid rgba(61,201,192,0.15);
+border-left: 3px solid var(–teal);
+padding: 16px 20px;
+font-size: 11px;
+color: #80C0B8;
+line-height: 1.8;
+margin-top: 16px;
+white-space: pre-wrap;
+overflow-x: auto;
+}
+
+.code-block .comment { color: #404858; }
+.code-block .key { color: var(–gold-light); }
+.code-block .val { color: var(–teal); }
+.code-block .str { color: #90C890; }
+
+.callout {
+display: flex; gap: 12px;
+padding: 14px 18px;
+border-left: 2px solid var(–gold);
+background: var(–gold-pale);
+margin-top: 16px;
+align-items: flex-start;
+}
+
+.callout-icon { color: var(–gold); flex-shrink: 0; margin-top: 1px; }
+.callout-text { font-size: 11px; color: var(–ivory); line-height: 1.6; }
+.callout-text strong { color: var(–gold-light); }
+
+/* ── SUMMARY TABLE ── */
+.summary-table {
+width: 100%;
+border-collapse: collapse;
+border: 1px solid var(–border);
+margin-bottom: 40px;
+}
+
+.summary-table th {
+background: var(–obsidian);
+padding: 10px 14px;
+text-align: left;
+font-size: 9px; letter-spacing: 3px;
+color: #505060; text-transform: uppercase;
+font-weight: 400;
+border-bottom: 1px solid var(–border);
+}
+
+.summary-table td {
+padding: 12px 14px;
+border-bottom: 1px solid var(–border-dim);
+font-size: 11px; color: #808090;
+vertical-align: top; line-height: 1.5;
+}
+
+.summary-table tr:last-child td { border-bottom: none; }
+.summary-table tr:hover td { background: rgba(255,255,255,0.015); }
+
+.td-name { color: var(–ivory) !important; font-weight: 500; }
+.td-done { color: var(–green) !important; }
+.td-q1 { color: var(–gold-light) !important; }
+.td-q2 { color: var(–amber) !important; }
+.td-q3 { color: var(–blue) !important; }
+.td-q4 { color: var(–rose) !important; }
+
+/* ── STATUS DOT ── */
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+.dot-done { background: var(–green); }
+.dot-q1   { background: var(–gold); }
+.dot-q2   { background: var(–amber); }
+.dot-q3   { background: var(–blue); }
+.dot-q4   { background: var(–rose); }
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 3px; height: 3px; }
+::-webkit-scrollbar-track { background: var(–obsidian); }
+::-webkit-scrollbar-thumb { background: rgba(184,151,58,0.25); }
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+nav { padding: 0 16px; }
+.section { padding: 32px 16px 60px; }
+.tcf-banner { grid-template-columns: 1fr; }
+.agent-grid { grid-template-columns: 1fr; }
+.mcp-body { grid-template-columns: 1fr; }
+.arch-grid { grid-template-columns: 1fr; }
+.org-chart { min-width: 600px; }
+}
+</style>
+
+</head>
+<body>
+
+<!-- ══ NAV ══ -->
+
+<nav>
+  <div class="nav-brand">Dhruva ✦</div>
+  <div class="nav-tab active" onclick="show('arch')">Architecture</div>
+  <div class="nav-tab" onclick="show('agents')">Agent Configs</div>
+  <div class="nav-tab" onclick="show('tasks')">Technical Tasks</div>
+  <div class="nav-tab" onclick="show('paperclip')">Paperclip Setup</div>
+</nav>
+
+<!-- ══════════════════════════════════ TAB 1: ARCHITECTURE ══ -->
+
+<section id="arch" class="section active">
+  <div class="page-header">
+    <div class="eyebrow">Dhruva Wealth OS — Agent Architecture</div>
+    <h1>System Design &amp;<br><em>Execution Blueprint</em></h1>
+    <p>Traffic → Conversion → Delivery framework applied to a lean 6-agent Paperclip network. CTO owns technical execution. CIO owns commercial execution. You own direction and client relationships.</p>
+  </div>
+
+  <!-- TCF BANNER -->
+
+  <div class="tcf-banner">
+    <div class="tcf-cell t">
+      <div class="tcf-num">01</div>
+      <div class="tcf-label">Traffic</div>
+      <div class="tcf-desc">People discovering Dhruva. LinkedIn content, BAPS network, accounting communities, conference presence. CIO + Content Agent own this lane.</div>
+    </div>
+    <div class="tcf-cell c">
+      <div class="tcf-num">02</div>
+      <div class="tcf-label">Conversion</div>
+      <div class="tcf-desc">Turning discovery into paying relationships. Free Audit → Partner Agreement → Pilot. CIO qualifies. CTO builds the proof. You close.</div>
+    </div>
+    <div class="tcf-cell d">
+      <div class="tcf-num">03</div>
+      <div class="tcf-label">Delivery</div>
+      <div class="tcf-desc">Keeping promises and exceeding expectations. MCP modules deployed, reports generated, clients retained. CTO runs this. QA Agent validates every output.</div>
+    </div>
+  </div>
+
+  <!-- ORG CHART -->
+
+  <div class="eyebrow" style="margin-bottom:16px">Agent Organisation — Paperclip Network</div>
+  <div class="org-wrap">
+    <div class="org-chart">
+
+```
+  <!-- L0: Principal -->
+  <div class="org-level">
+    <div class="org-node principal">
+      <div class="node-role">Principal</div>
+      <div class="node-title">Gaurav</div>
+      <div class="node-model">HUMAN — DIRECTOR</div>
+      <div class="node-focus">Strategy · Relationships · Client closing · Final approval</div>
+    </div>
+  </div>
+
+  <div class="connector-v"></div>
+
+  <!-- connector spread to CTO / CIO -->
+  <div style="display:flex; width:100%; justify-content:center; position:relative; height:32px;">
+    <div style="position:absolute; top:0; left:calc(50% - 200px); right:calc(50% - 200px); height:1px; background:var(--border);"></div>
+    <div style="position:absolute; top:0; left:calc(50% - 200px); width:1px; height:32px; background:var(--border);"></div>
+    <div style="position:absolute; top:0; right:calc(50% - 200px); width:1px; height:32px; background:var(--border);"></div>
+  </div>
+
+  <!-- L1: CTO + CIO -->
+  <div class="org-level" style="gap:160px;">
+    <div class="org-node cto">
+      <div class="node-role">Senior Agent</div>
+      <div class="node-title">CTO Agent</div>
+      <div class="node-model">Claude Sonnet 4.6</div>
+      <div class="node-focus">Architecture · MCP builds · Infrastructure · Technical decisions</div>
+    </div>
+    <div class="org-node cio">
+      <div class="node-role">Senior Agent</div>
+      <div class="node-title">CIO Agent</div>
+      <div class="node-model">Claude Sonnet 4.6</div>
+      <div class="node-focus">Sales · Marketing · Outreach · Partner pipeline · Client intelligence</div>
+    </div>
+  </div>
+
+  <!-- connectors to sub-agents -->
+  <div style="display:flex; width:100%; height:32px; position:relative; justify-content:center; gap:160px;">
+    <div style="position:relative; flex:1; max-width:320px;">
+      <div style="position:absolute; top:0; left:50%; width:1px; height:32px; background:var(--border);"></div>
+      <div style="position:absolute; top:0; left:calc(50% - 80px); right:calc(50% - 80px); height:1px; background:var(--border); transform:translateY(0);"></div>
+      <div style="position:absolute; top:0; left:calc(50% - 80px); width:1px; height:32px; background:var(--border);"></div>
+      <div style="position:absolute; top:0; right:calc(50% - 80px); width:1px; height:32px; background:var(--border);"></div>
+    </div>
+    <div style="position:relative; flex:1; max-width:320px;">
+      <div style="position:absolute; top:0; left:50%; width:1px; height:32px; background:var(--border);"></div>
+      <div style="position:absolute; top:0; left:calc(50% - 80px); right:calc(50% - 80px); height:1px; background:var(--border); transform:translateY(0);"></div>
+      <div style="position:absolute; top:0; left:calc(50% - 80px); width:1px; height:32px; background:var(--border);"></div>
+      <div style="position:absolute; top:0; right:calc(50% - 80px); width:1px; height:32px; background:var(--border);"></div>
+    </div>
+  </div>
+
+  <!-- L2: Sub-agents -->
+  <div class="org-level" style="gap:8px; max-width:900px; margin:0 auto;">
+    <div class="org-node dev" style="min-width:130px;">
+      <div class="node-role">Under CTO</div>
+      <div class="node-title">Dev Agent</div>
+      <div class="node-model">GPT-4o-mini</div>
+      <div class="node-focus">Code gen · Boilerplate · Bug fixes</div>
+    </div>
+    <div style="width:80px;"></div>
+    <div class="org-node qa" style="min-width:130px;">
+      <div class="node-role">Under CTO</div>
+      <div class="node-title">QA Agent</div>
+      <div class="node-model">GPT-4o-mini</div>
+      <div class="node-focus">Testing · Validation · Report checks</div>
+    </div>
+    <div style="width:80px;"></div>
+    <div class="org-node content" style="min-width:130px;">
+      <div class="node-role">Under CIO</div>
+      <div class="node-title">Content Agent</div>
+      <div class="node-model">Gemini Flash</div>
+      <div class="node-focus">LinkedIn · Articles · Case studies</div>
+    </div>
+    <div style="width:80px;"></div>
+    <div class="org-node outreach" style="min-width:130px;">
+      <div class="node-role">Under CIO</div>
+      <div class="node-title">Outreach Agent</div>
+      <div class="node-model">GPT-4o-mini</div>
+      <div class="node-focus">Partner emails · Follow-ups · CRM</div>
+    </div>
+  </div>
+
+</div>
+```
+
+  </div>
+
+  <!-- WORKFLOW DIAGRAM -->
+
+  <div class="eyebrow" style="margin-bottom:16px; margin-top:40px;">Traffic → Conversion → Delivery — End-to-End Workflow</div>
+  <div class="workflow">
+
+```
+<div class="wf-lane traffic">
+  <div class="wf-label">
+    <div class="wf-lane-name">Traffic</div>
+    <div style="font-size:9px; color:#404050; margin-top:4px;">CIO + Content + Outreach</div>
+  </div>
+  <div class="wf-body">
+    <div class="wf-step"><div class="wf-box">LinkedIn Post<br><span style="font-size:9px; color:#404878;">Content Agent / weekly</span></div><div class="wf-arrow">→</div></div>
+    <div class="wf-step"><div class="wf-box">BAPS Network<br><span style="font-size:9px; color:#404878;">Gaurav / events</span></div><div class="wf-arrow">→</div></div>
+    <div class="wf-step"><div class="wf-box">Accounting Community<br><span style="font-size:9px; color:#404878;">Outreach Agent / weekly</span></div><div class="wf-arrow">→</div></div>
+    <div class="wf-step"><div class="wf-box">Conference / Speaking<br><span style="font-size:9px; color:#404878;">Gaurav / quarterly</span></div><div class="wf-arrow">→</div></div>
+    <div class="wf-step"><div class="wf-box" style="border-color:rgba(88,144,216,0.6);">dhruva.ai<br><span style="font-size:9px;">Lead Captured</span></div></div>
+  </div>
+</div>
+
+<div class="wf-lane convert">
+  <div class="wf-label">
+    <div class="wf-lane-name">Conversion</div>
+    <div style="font-size:9px; color:#404050; margin-top:4px;">CIO + CTO + Gaurav</div>
+  </div>
+  <div class="wf-body">
+    <div class="wf-step"><div class="wf-box">CIO Qualifies Lead<br><span style="font-size:9px; color:#606020;">accountant or HNW?</span></div><div class="wf-arrow">→</div></div>
+    <div class="wf-step"><div class="wf-box">Free Audit Offer<br><span style="font-size:9px; color:#606020;">CIO drafts, Gaurav sends</span></div><div class="wf-arrow">→</div></div>
+    <div class="wf-step"><div class="wf-box">CTO Runs Audit<br><span style="font-size:9px; color:#606020;">MCP-01 + analysis</span></div><div class="wf-arrow">→</div></div>
+    <div class="wf-step"><div class="wf-box">Audit Report + Proposal<br><span style="font-size:9px; color:#606020;">QA checks, CIO polishes</span></div><div class="wf-arrow">→</div></div>
+    <div class="wf-step"><div class="wf-box" style="border-color:rgba(240,192,64,0.6);">Gaurav Closes<br><span style="font-size:9px;">Contract Signed</span></div></div>
+  </div>
+</div>
+
+<div class="wf-lane deliver">
+  <div class="wf-label">
+    <div class="wf-lane-name">Delivery</div>
+    <div style="font-size:9px; color:#404050; margin-top:4px;">CTO + Dev + QA</div>
+  </div>
+  <div class="wf-body">
+    <div class="wf-step"><div class="wf-box">Azure Workspace<br><span style="font-size:9px; color:#204030;">CTO provisions</span></div><div class="wf-arrow">→</div></div>
+    <div class="wf-step"><div class="wf-box">MCP Modules Active<br><span style="font-size:9px; color:#204030;">Dev Agent deploys</span></div><div class="wf-arrow">→</div></div>
+    <div class="wf-step"><div class="wf-box">Automated Reports<br><span style="font-size:9px; color:#204030;">n8n → client email</span></div><div class="wf-arrow">→</div></div>
+    <div class="wf-step"><div class="wf-box">Risk Alerts<br><span style="font-size:9px; color:#204030;">MCP-04 → Telegram/Email</span></div><div class="wf-arrow">→</div></div>
+    <div class="wf-step"><div class="wf-box" style="border-color:rgba(88,184,120,0.6);">QA Validates<br><span style="font-size:9px;">Every Client Output</span></div></div>
+  </div>
+</div>
+
+<div class="wf-lane infra">
+  <div class="wf-label">
+    <div class="wf-lane-name">Infrastructure</div>
+    <div style="font-size:9px; color:#303040; margin-top:4px;">Always-on</div>
+  </div>
+  <div class="wf-body">
+    <div class="wf-step"><div class="wf-box">Paperclip<br><span style="font-size:9px; color:#303040;">Agent orchestration</span></div><div class="wf-arrow">→</div></div>
+    <div class="wf-step"><div class="wf-box">Azure Functions<br><span style="font-size:9px; color:#303040;">MCP microservices</span></div><div class="wf-arrow">→</div></div>
+    <div class="wf-step"><div class="wf-box">Supabase<br><span style="font-size:9px; color:#303040;">Operational DB</span></div><div class="wf-arrow">→</div></div>
+    <div class="wf-step"><div class="wf-box">n8n<br><span style="font-size:9px; color:#303040;">Workflow automation</span></div><div class="wf-arrow">→</div></div>
+    <div class="wf-step"><div class="wf-box">Vercel / Netlify<br><span style="font-size:9px; color:#303040;">Client dashboards</span></div></div>
+  </div>
+</div>
+```
+
+  </div>
+
+  <!-- SYSTEM ARCHITECTURE LAYERS -->
+
+  <div class="eyebrow" style="margin-bottom:16px; margin-top:40px;">Technical Stack — Layer by Layer</div>
+  <div class="arch-grid">
+
+```
+<div class="arch-layer">
+  <div class="arch-layer-title">Intelligence Layer</div>
+  <div class="arch-item"><div class="arch-dot" style="background:var(--teal)"></div><div class="arch-item-text"><span class="arch-item-name">Claude Sonnet 4.6</span><span class="arch-item-sub">CTO + CIO agents. Complex reasoning, long documents, strategic output.</span></div></div>
+  <div class="arch-item"><div class="arch-dot" style="background:rgba(88,205,192,0.5)"></div><div class="arch-item-text"><span class="arch-item-name">GPT-4o-mini</span><span class="arch-item-sub">Dev + QA + Outreach. Fast, cheap, routine tasks. 10x volume at low cost.</span></div></div>
+  <div class="arch-item"><div class="arch-dot" style="background:rgba(240,192,64,0.5)"></div><div class="arch-item-text"><span class="arch-item-name">Gemini Flash</span><span class="arch-item-sub">Content Agent. High-speed content generation, SEO drafts, social posts.</span></div></div>
+  <div class="arch-item"><div class="arch-dot" style="background:var(--gold)"></div><div class="arch-item-text"><span class="arch-item-name">Paperclip</span><span class="arch-item-sub">Agent orchestration layer. Routes tasks, manages prompts, handles agent-to-agent delegation.</span></div></div>
+</div>
+
+<div class="arch-layer">
+  <div class="arch-layer-title">Application Layer</div>
+  <div class="arch-item"><div class="arch-dot" style="background:var(--blue)"></div><div class="arch-item-text"><span class="arch-item-name">Azure Functions (Python)</span><span class="arch-item-sub">MCP-01 to MCP-05 microservices. Serverless, scalable, ISM-aligned.</span></div></div>
+  <div class="arch-item"><div class="arch-dot" style="background:var(--blue)"></div><div class="arch-item-text"><span class="arch-item-name">Next.js (MCP-03 Dashboard)</span><span class="arch-item-sub">Client-facing wealth dashboard. Deployed on Vercel. Auth via Azure AD B2C.</span></div></div>
+  <div class="arch-item"><div class="arch-dot" style="background:var(--green)"></div><div class="arch-item-text"><span class="arch-item-name">n8n (Self-hosted)</span><span class="arch-item-sub">Automation bridge. Triggers reports, routes alerts to Email / Teams / Telegram. Already in your stack.</span></div></div>
+  <div class="arch-item"><div class="arch-dot" style="background:var(--rose)"></div><div class="arch-item-text"><span class="arch-item-name">Puppeteer / WeasyPrint</span><span class="arch-item-sub">PDF report generation. Produces boardroom-quality family wealth reports.</span></div></div>
+</div>
+
+<div class="arch-layer">
+  <div class="arch-layer-title">Data &amp; Infrastructure Layer</div>
+  <div class="arch-item"><div class="arch-dot" style="background:var(--green)"></div><div class="arch-item-text"><span class="arch-item-name">Supabase</span><span class="arch-item-sub">Operational DB. Clients, entities, accounts, transactions, alerts. Row-level security per client.</span></div></div>
+  <div class="arch-item"><div class="arch-dot" style="background:var(--blue)"></div><div class="arch-item-text"><span class="arch-item-name">Azure Blob Storage</span><span class="arch-item-sub">Document store. Bank statements, reports, trust documents. Encrypted at rest.</span></div></div>
+  <div class="arch-item"><div class="arch-dot" style="background:var(--gold)"></div><div class="arch-item-text"><span class="arch-item-name">Azure Key Vault</span><span class="arch-item-sub">All secrets, API keys, client credentials. ISM-compliant. No plaintext anywhere.</span></div></div>
+  <div class="arch-item"><div class="arch-dot" style="background:rgba(184,151,58,0.5)"></div><div class="arch-item-text"><span class="arch-item-name">Private Deployment Option</span><span class="arch-item-sub">For UHNW: entire stack in client's own Azure subscription. Zero data shared. Your ISM experience is the sell.</span></div></div>
+</div>
+```
+
+  </div>
+
+</section>
+
+<!-- ══════════════════════════════════ TAB 2: AGENT CONFIGS ══ -->
+
+<section id="agents" class="section">
+  <div class="page-header">
+    <div class="eyebrow">Paperclip — Agent Configuration</div>
+    <h1>Agent Roles, Models<br>&amp; <em>System Prompts</em></h1>
+    <p>Each agent has a defined scope. Senior agents (CTO, CIO) use Claude Sonnet for reasoning quality. Sub-agents use cheaper models for volume tasks. No agent crosses lane without explicit delegation.</p>
+  </div>
+
+  <div class="agent-grid">
+
+```
+<!-- CTO -->
+<div class="agent-card cto">
+  <div class="agent-header">
+    <div>
+      <div class="agent-title">CTO Agent</div>
+      <div class="agent-subtitle">Chief Technology Officer · Reports to: Gaurav</div>
+    </div>
+    <div class="model-tag">CLAUDE SONNET 4.6</div>
+  </div>
+
+  <div class="agent-section t">
+    <div class="agent-section-label">Traffic Responsibilities</div>
+    <div class="tag-list">
+      <span class="tag tag-t">Build demo environments</span>
+      <span class="tag tag-t">Technical credibility assets</span>
+      <span class="tag tag-t">Architecture diagrams for prospects</span>
+    </div>
+  </div>
+  <div class="agent-section c">
+    <div class="agent-section-label">Conversion Responsibilities</div>
+    <div class="tag-list">
+      <span class="tag tag-c">Run AI Wealth Audits (technical)</span>
+      <span class="tag tag-c">PoC builds for prospects</span>
+      <span class="tag tag-c">Security architecture review for UHNW</span>
+    </div>
+  </div>
+  <div class="agent-section d">
+    <div class="agent-section-label">Delivery Responsibilities</div>
+    <div class="tag-list">
+      <span class="tag tag-d">MCP-01 to MCP-05 builds</span>
+      <span class="tag tag-d">Azure provisioning</span>
+      <span class="tag tag-d">Client environment deployment</span>
+      <span class="tag tag-d">Delegate to Dev + QA agents</span>
+    </div>
+  </div>
+  <div style="margin-top:12px;">
+    <div class="agent-section-label" style="color:#505060; font-size:9px; letter-spacing:3px; text-transform:uppercase; margin-bottom:8px;">System Prompt (core)</div>
+    <div class="prompt-box">
+      <strong>You are the CTO of Dhruva, an AI systems venture studio based in Canberra, Australia.</strong> Your domain is technical architecture, product development, and secure Azure cloud infrastructure. You have deep expertise in Python, Next.js, Azure Functions, Bicep, Supabase, and n8n. You are building the Dhruva Finance MCP stack (MCP-01 through MCP-05) targeting accounting firms and UHNW family offices. All infrastructure must meet Australian Government ISM standards. You output structured technical specifications, task breakdowns, code snippets, and deployment instructions. When delegating to Dev or QA agents, output a clear task brief with acceptance criteria. You never produce vague output — every response ends with a concrete next action.
+    </div>
+  </div>
+  <div style="margin-top:10px;">
+    <div class="agent-section-label" style="color:#505060; font-size:9px; letter-spacing:3px; text-transform:uppercase; margin-bottom:6px;">Tools to assign</div>
+    <div class="tag-list">
+      <span class="tag tag-x">Code interpreter</span>
+      <span class="tag tag-x">Azure Docs search</span>
+      <span class="tag tag-x">GitHub (read)</span>
+      <span class="tag tag-x">File management</span>
+      <span class="tag tag-x">n8n webhook trigger</span>
+    </div>
+  </div>
+</div>
+
+<!-- CIO -->
+<div class="agent-card cio">
+  <div class="agent-header">
+    <div>
+      <div class="agent-title">CIO Agent</div>
+      <div class="agent-subtitle">Chief Intelligence Officer · Reports to: Gaurav</div>
+    </div>
+    <div class="model-tag">CLAUDE SONNET 4.6</div>
+  </div>
+
+  <div class="agent-section t">
+    <div class="agent-section-label">Traffic Responsibilities</div>
+    <div class="tag-list">
+      <span class="tag tag-t">Weekly content strategy brief</span>
+      <span class="tag tag-t">Accounting community targeting</span>
+      <span class="tag tag-t">BAPS network activation plans</span>
+      <span class="tag tag-t">Conference opportunities research</span>
+    </div>
+  </div>
+  <div class="agent-section c">
+    <div class="agent-section-label">Conversion Responsibilities</div>
+    <div class="tag-list">
+      <span class="tag tag-c">Lead qualification briefs</span>
+      <span class="tag tag-c">Partner Program outreach sequences</span>
+      <span class="tag tag-c">Proposal drafts</span>
+      <span class="tag tag-c">Audit report executive summary</span>
+    </div>
+  </div>
+  <div class="agent-section d">
+    <div class="agent-section-label">Delivery Responsibilities</div>
+    <div class="tag-list">
+      <span class="tag tag-d">Client relationship notes</span>
+      <span class="tag tag-d">Renewal / upsell briefs</span>
+      <span class="tag tag-d">Referral request scripts</span>
+      <span class="tag tag-d">Delegate to Content + Outreach agents</span>
+    </div>
+  </div>
+  <div style="margin-top:12px;">
+    <div class="agent-section-label" style="color:#505060; font-size:9px; letter-spacing:3px; text-transform:uppercase; margin-bottom:8px;">System Prompt (core)</div>
+    <div class="prompt-box">
+      <strong>You are the CIO of Dhruva, an AI systems venture studio selling intelligence tools to Australian accounting firms, HNW individuals, and family offices.</strong> Your domain is commercial intelligence: sales strategy, marketing, partner pipeline, and client relationships. You understand the accounting profession deeply and know that UHNW clients are reached through trusted referrals, not cold outreach. You speak in the language of accountants and wealth advisors — not tech. You produce sharp, actionable sales briefs, outreach sequences, content strategy plans, and client communication. When delegating to Content or Outreach agents, output a precise task brief with tone, audience, and desired outcome. Your outputs are always boardroom-ready — no filler, no jargon.
+    </div>
+  </div>
+  <div style="margin-top:10px;">
+    <div class="agent-section-label" style="color:#505060; font-size:9px; letter-spacing:3px; text-transform:uppercase; margin-bottom:6px;">Tools to assign</div>
+    <div class="tag-list">
+      <span class="tag tag-x">Web search</span>
+      <span class="tag tag-x">Gmail (draft)</span>
+      <span class="tag tag-x">Google Calendar</span>
+      <span class="tag tag-x">LinkedIn research</span>
+      <span class="tag tag-x">n8n webhook trigger</span>
+    </div>
+  </div>
+</div>
+
+<!-- DEV -->
+<div class="agent-card dev">
+  <div class="agent-header">
+    <div>
+      <div class="agent-title">Dev Agent</div>
+      <div class="agent-subtitle">Software Developer · Reports to: CTO</div>
+    </div>
+    <div class="model-tag">GPT-4o-mini</div>
+  </div>
+  <div class="agent-section d">
+    <div class="agent-section-label">Core Tasks</div>
+    <div class="tag-list">
+      <span class="tag tag-d">Python function generation</span>
+      <span class="tag tag-d">Azure Function boilerplate</span>
+      <span class="tag tag-d">Next.js components</span>
+      <span class="tag tag-d">Supabase schema scripts</span>
+      <span class="tag tag-d">n8n workflow JSON</span>
+      <span class="tag tag-d">Bug investigation</span>
+    </div>
+  </div>
+  <div class="prompt-box" style="margin-top:12px;">
+    <strong>You are a software developer for Dhruva.</strong> You receive task briefs from the CTO Agent. You output working code in Python, TypeScript/Next.js, or Bicep. You always include comments, error handling, and a brief usage note. Stack: Azure Functions, Supabase, pdfplumber, Anthropic API, Next.js, Recharts, n8n webhooks. Do not add features not requested. Return code only — no prose padding.
+  </div>
+</div>
+
+<!-- QA -->
+<div class="agent-card qa">
+  <div class="agent-header">
+    <div>
+      <div class="agent-title">QA Agent</div>
+      <div class="agent-subtitle">Quality Assurance · Reports to: CTO</div>
+    </div>
+    <div class="model-tag">GPT-4o-mini</div>
+  </div>
+  <div class="agent-section d">
+    <div class="agent-section-label">Core Tasks</div>
+    <div class="tag-list">
+      <span class="tag tag-d">Test case generation</span>
+      <span class="tag tag-d">Code review (logic errors)</span>
+      <span class="tag tag-d">Client report validation</span>
+      <span class="tag tag-d">Data accuracy checks</span>
+      <span class="tag tag-d">Edge case identification</span>
+      <span class="tag tag-d">Pre-delivery sign-off checklist</span>
+    </div>
+  </div>
+  <div class="prompt-box" style="margin-top:12px;">
+    <strong>You are the QA engineer for Dhruva.</strong> You review code, data outputs, and client-facing reports before they are delivered. For code: check logic, edge cases, and error handling. For reports: check data accuracy, formatting, and professional presentation. You output a structured sign-off checklist with PASS / FAIL / NEEDS-FIX per item. No client output ships without your review.
+  </div>
+</div>
+
+<!-- CONTENT -->
+<div class="agent-card content">
+  <div class="agent-header">
+    <div>
+      <div class="agent-title">Content Agent</div>
+      <div class="agent-subtitle">Content &amp; Marketing · Reports to: CIO</div>
+    </div>
+    <div class="model-tag">GEMINI FLASH</div>
+  </div>
+  <div class="agent-section t">
+    <div class="agent-section-label">Core Tasks (Traffic)</div>
+    <div class="tag-list">
+      <span class="tag tag-t">LinkedIn posts (weekly)</span>
+      <span class="tag tag-t">dhruva.ai website copy</span>
+      <span class="tag tag-t">Thought leadership articles</span>
+      <span class="tag tag-t">Case study drafts</span>
+      <span class="tag tag-t">One-page leave-behinds</span>
+    </div>
+  </div>
+  <div class="prompt-box" style="margin-top:12px;">
+    <strong>You are the content specialist for Dhruva, an AI venture studio targeting Australian accounting firms and wealth advisors.</strong> You write with precision, authority, and clarity. No buzzwords. No hype. Every piece you produce makes Gaurav and Dhruva appear as the most credible, intelligent choice in the room. Tone: respected expert, not salesperson. Format outputs as ready-to-use copy with a one-line context note at the top. LinkedIn posts: 150–250 words, one insight, one clear point. Articles: 400–600 words, structured argument.
+  </div>
+</div>
+
+<!-- OUTREACH -->
+<div class="agent-card outreach">
+  <div class="agent-header">
+    <div>
+      <div class="agent-title">Outreach Agent</div>
+      <div class="agent-subtitle">Partner &amp; Client Outreach · Reports to: CIO</div>
+    </div>
+    <div class="model-tag">GPT-4o-mini</div>
+  </div>
+  <div class="agent-section c">
+    <div class="agent-section-label">Core Tasks (Conversion)</div>
+    <div class="tag-list">
+      <span class="tag tag-c">Partner Program intro emails</span>
+      <span class="tag tag-c">Follow-up sequences (3-touch)</span>
+      <span class="tag tag-c">Audit offer emails</span>
+      <span class="tag tag-c">Meeting prep briefs</span>
+      <span class="tag tag-c">Referral request scripts</span>
+    </div>
+  </div>
+  <div class="prompt-box" style="margin-top:12px;">
+    <strong>You are the outreach specialist for Dhruva.</strong> You draft emails and follow-up sequences for accounting firm partners and HNW prospects. Tone: warm, professional, never salesy. You understand that accountants value trust and precision — not hype. Emails: under 150 words. Subject lines: specific and curiosity-driven. Always include one clear CTA. Output ready-to-send drafts that Gaurav can review and send in under 2 minutes.
+  </div>
+</div>
+```
+
+  </div>
+
+  <!-- LLM COST SUMMARY -->
+
+  <div class="eyebrow" style="margin-bottom:12px;">LLM Cost Model — Monthly Estimate</div>
+  <table class="summary-table">
+    <tr>
+      <th>Agent</th><th>Model</th><th>Est. Calls/Mo</th><th>Est. Cost/Mo</th><th>Justification</th>
+    </tr>
+    <tr>
+      <td class="td-name">CTO Agent</td><td>Claude Sonnet 4.6</td><td>200–400</td><td>$15–$40</td><td>High reasoning quality needed for architecture + client audits</td>
+    </tr>
+    <tr>
+      <td class="td-name">CIO Agent</td><td>Claude Sonnet 4.6</td><td>150–300</td><td>$12–$30</td><td>Sales nuance and stakeholder communication require quality</td>
+    </tr>
+    <tr>
+      <td class="td-name">Dev Agent</td><td>GPT-4o-mini</td><td>400–800</td><td>$4–$8</td><td>Volume code tasks. Speed and cost over raw reasoning.</td>
+    </tr>
+    <tr>
+      <td class="td-name">QA Agent</td><td>GPT-4o-mini</td><td>200–400</td><td>$2–$4</td><td>Structured checklist output. Low complexity.</td>
+    </tr>
+    <tr>
+      <td class="td-name">Content Agent</td><td>Gemini Flash</td><td>100–200</td><td>$1–$3</td><td>High-speed content at near-zero cost.</td>
+    </tr>
+    <tr>
+      <td class="td-name">Outreach Agent</td><td>GPT-4o-mini</td><td>100–200</td><td>$1–$2</td><td>Short outputs. Template-driven. Cheap.</td>
+    </tr>
+    <tr>
+      <td class="td-name" style="color:var(--gold-light) !important;">TOTAL</td><td>—</td><td>1,150–2,300</td><td style="color:var(--gold-light) !important;">~$35–$87/mo</td><td>Well within bootstrap budget. Scale models up as revenue grows.</td>
+    </tr>
+  </table>
+
+</section>
+
+<!-- ══════════════════════════════════ TAB 3: TECHNICAL TASKS ══ -->
+
+<section id="tasks" class="section">
+  <div class="page-header">
+    <div class="eyebrow">MCP Build Plan — Feature Level Tasks</div>
+    <h1>Technical Execution<br><em>Task Breakdown</em></h1>
+    <p>Each MCP module broken into Traffic, Conversion, and Delivery tasks. CTO Agent owns all of these. Dev Agent executes. QA Agent validates before any client sees output.</p>
+  </div>
+
+  <!-- MCP-01 -->
+
+  <div class="mcp-section">
+    <div class="mcp-header">
+      <div class="mcp-id">MCP-01</div>
+      <div class="mcp-title-wrap">
+        <div class="mcp-title">Financial Data Ingestion</div>
+        <div class="mcp-subtitle">Multi-entity bank statement parser, normaliser &amp; structured exporter</div>
+      </div>
+      <div class="mcp-meta">
+        <div class="mcp-quarter"><span class="dot dot-q1"></span>Refine — Q1</div>
+        <div class="mcp-owner">Owner: CTO → Dev Agent</div>
+      </div>
+    </div>
+    <div class="mcp-body">
+      <div class="mcp-col t">
+        <div class="mcp-col-title">Traffic — Demo Asset</div>
+        <div class="task-item"><div class="task-num">T1</div><div class="task-text"><strong>Build a public demo page</strong> on dhruva.ai — upload a sample statement, see structured output. Shows accountants the product in 30 seconds. No sign-up required.</div></div>
+        <div class="task-item"><div class="task-num">T2</div><div class="task-text"><strong>Content Agent brief:</strong> LinkedIn post series — "What AI found in 500 bank statements." Real patterns (anonymised). 3 posts, weekly cadence.</div></div>
+        <div class="task-item"><div class="task-num">T3</div><div class="task-text"><strong>One-page explainer</strong> — "From 40 bank statements to clean data in 4 minutes." Leave-behind for accounting firm meetings. Content Agent drafts.</div></div>
+      </div>
+      <div class="mcp-col c">
+        <div class="mcp-col-title">Conversion — Proof Points</div>
+        <div class="task-item"><div class="task-num">C1</div><div class="task-text"><strong>Free audit workflow:</strong> accountant uploads client's 3-month statements → MCP-01 generates categorised summary → CTO adds analysis → deliver in 48hrs.</div></div>
+        <div class="task-item"><div class="task-num">C2</div><div class="task-text"><strong>Integration guide</strong> for Xero CSV, MYOB CSV, Commonwealth Bank, Westpac, ANZ statement formats. Dev Agent builds format detection.</div></div>
+        <div class="task-item"><div class="task-num">C3</div><div class="task-text"><strong>Multi-entity demo:</strong> show 3 entities → 1 consolidated view. This is the HNW family office hook. Build the demo dataset synthetically.</div></div>
+      </div>
+      <div class="mcp-col d">
+        <div class="mcp-col-title">Delivery — Build Tasks</div>
+        <div class="task-item"><div class="task-num">D1</div><div class="task-text"><strong>PDF parser:</strong> <code>pdfplumber</code> for text-based PDFs + <code>pytesseract</code> fallback for scanned. Azure Function HTTP trigger. Returns JSON.</div></div>
+        <div class="task-item"><div class="task-num">D2</div><div class="task-text"><strong>Claude-powered categorisation:</strong> pass raw transactions to Claude with category schema. Returns structured categories with confidence scores.</div></div>
+        <div class="task-item"><div class="task-num">D3</div><div class="task-text"><strong>Supabase schema:</strong> <code>entities</code>, <code>accounts</code>, <code>transactions</code>, <code>categories</code> tables. Row-level security by <code>client_id</code>.</div></div>
+        <div class="task-item"><div class="task-num">D4</div><div class="task-text"><strong>Export API:</strong> GET /export?client_id=X&format=csv|json|pdf. Azure Blob stores outputs. Signed URL for client download.</div></div>
+        <div class="task-item"><div class="task-num">D5</div><div class="task-text"><strong>QA checklist:</strong> 10 test statements across 4 banks. Validate category accuracy &gt;90%, no PII in logs, error handling for malformed PDFs.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MCP-02 -->
+
+  <div class="mcp-section">
+    <div class="mcp-header">
+      <div class="mcp-id">MCP-02</div>
+      <div class="mcp-title-wrap">
+        <div class="mcp-title">BAS &amp; Tax Compliance Agent</div>
+        <div class="mcp-subtitle">Automated BAS prep, GST reconciliation, anomaly detection for accountants</div>
+      </div>
+      <div class="mcp-meta">
+        <div class="mcp-quarter"><span class="dot dot-q1"></span>SHIP — July 2026</div>
+        <div class="mcp-owner">Owner: CTO → Dev Agent</div>
+      </div>
+    </div>
+    <div class="mcp-body">
+      <div class="mcp-col t">
+        <div class="mcp-col-title">Traffic — Demo Asset</div>
+        <div class="task-item"><div class="task-num">T1</div><div class="task-text"><strong>Loom video demo:</strong> 3-minute screen recording — CSV in, BAS draft out. CTO records. CIO distributes to accounting firm contacts.</div></div>
+        <div class="task-item"><div class="task-num">T2</div><div class="task-text"><strong>"Time saved" calculator</strong> on dhruva.ai: accountant enters number of BAS clients → sees hours saved per quarter. Dev Agent builds (simple JS).</div></div>
+        <div class="task-item"><div class="task-num">T3</div><div class="task-text"><strong>Content Agent:</strong> "5 GST errors I find in every BAS review" — LinkedIn carousel. Positions Gaurav as the expert before the product sell.</div></div>
+      </div>
+      <div class="mcp-col c">
+        <div class="mcp-col-title">Conversion — Proof Points</div>
+        <div class="task-item"><div class="task-num">C1</div><div class="task-text"><strong>Partner Program offer:</strong> 3-month free trial for accounting firm, in exchange for 1 testimonial + 1 client intro. Outreach Agent drafts the email sequence.</div></div>
+        <div class="task-item"><div class="task-num">C2</div><div class="task-text"><strong>Anomaly report template:</strong> generate a sample "BAS review findings" PDF — 1 page with 3 flagged items. Shows value before sale. QA validates format.</div></div>
+        <div class="task-item"><div class="task-num">C3</div><div class="task-text"><strong>CPA Australia / Tax Institute:</strong> CIO researches 2 events in Q1 where Gaurav could present. Content Agent prepares 200-word abstract.</div></div>
+      </div>
+      <div class="mcp-col d">
+        <div class="mcp-col-title">Delivery — Build Tasks</div>
+        <div class="task-item"><div class="task-num">D1</div><div class="task-text"><strong>CSV ingestion:</strong> accept Xero, MYOB, QuickBooks exports. Normalise to internal transaction schema. Dev Agent builds parser with format auto-detection.</div></div>
+        <div class="task-item"><div class="task-num">D2</div><div class="task-text"><strong>GST engine:</strong> classify transactions as taxable/GST-free/input-taxed. Calculate G1-G20 BAS fields. Python rule engine + Claude validation pass.</div></div>
+        <div class="task-item"><div class="task-num">D3</div><div class="task-text"><strong>Anomaly detection:</strong> Claude prompt — "Review these transactions and flag any that appear inconsistent with a [business type] operation." Return structured flags.</div></div>
+        <div class="task-item"><div class="task-num">D4</div><div class="task-text"><strong>BAS PDF output:</strong> populate ATO NAT 4189 format fields. WeasyPrint renders. QA Agent validates all field values against test data.</div></div>
+        <div class="task-item"><div class="task-num">D5</div><div class="task-text"><strong>Accountant review workflow:</strong> flag uncertain items for human review. Show confidence score. Only auto-populate high-confidence (&gt;95%) fields.</div></div>
+        <div class="task-item"><div class="task-num">D6</div><div class="task-text"><strong>Azure Function deploy:</strong> HTTP POST /bas/generate. Secured with Azure AD bearer token. Logs to Application Insights. No PII in logs.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MCP-03 -->
+
+  <div class="mcp-section">
+    <div class="mcp-header">
+      <div class="mcp-id">MCP-03</div>
+      <div class="mcp-title-wrap">
+        <div class="mcp-title">Wealth Intelligence Dashboard</div>
+        <div class="mcp-subtitle">Unified multi-entity view, net worth tracking, cashflow, PDF family reports</div>
+      </div>
+      <div class="mcp-meta">
+        <div class="mcp-quarter"><span class="dot dot-q2"></span>Build — Q2</div>
+        <div class="mcp-owner">Owner: CTO → Dev Agent</div>
+      </div>
+    </div>
+    <div class="mcp-body">
+      <div class="mcp-col t">
+        <div class="mcp-col-title">Traffic — Demo Asset</div>
+        <div class="task-item"><div class="task-num">T1</div><div class="task-text"><strong>Interactive mockup:</strong> static demo at demo.dhruva.ai with synthetic HNW family data. Accountant can show client in meeting. No auth needed.</div></div>
+        <div class="task-item"><div class="task-num">T2</div><div class="task-text"><strong>Content Agent:</strong> "What a UHNW family office dashboard actually needs" — LinkedIn article. Positions MCP-03 as the answer before product is announced.</div></div>
+      </div>
+      <div class="mcp-col c">
+        <div class="mcp-col-title">Conversion — Proof Points</div>
+        <div class="task-item"><div class="task-num">C1</div><div class="task-text"><strong>Sample family report PDF:</strong> 4-page wealth summary with charts — net worth, cashflow, concentration risk, top holdings. QA validates. CIO uses in every HNW meeting.</div></div>
+        <div class="task-item"><div class="task-num">C2</div><div class="task-text"><strong>HNW Audit output:</strong> MCP-01 data → MCP-03 renders 2-week audit result as a professional dashboard report. This is the conversion moment.</div></div>
+      </div>
+      <div class="mcp-col d">
+        <div class="mcp-col-title">Delivery — Build Tasks</div>
+        <div class="task-item"><div class="task-num">D1</div><div class="task-text"><strong>Next.js app scaffold:</strong> App Router, Tailwind, Azure AD B2C auth, Supabase client. Deploy on Vercel. Dev Agent sets up with CTO review.</div></div>
+        <div class="task-item"><div class="task-num">D2</div><div class="task-text"><strong>Data model:</strong> <code>clients → entities → accounts → balances → transactions</code>. Entity types: individual, company, trust, SMSF. Supabase RLS per client.</div></div>
+        <div class="task-item"><div class="task-num">D3</div><div class="task-text"><strong>Net worth engine:</strong> aggregate asset values minus liabilities across all entities. Historical tracking (monthly snapshots). Recharts line graph.</div></div>
+        <div class="task-item"><div class="task-num">D4</div><div class="task-text"><strong>Concentration risk calc:</strong> % allocation per asset class, entity, geography. Flag if any single position &gt;30% of portfolio. Colour-coded heatmap.</div></div>
+        <div class="task-item"><div class="task-num">D5</div><div class="task-text"><strong>PDF report generator:</strong> Puppeteer renders the dashboard as a 4–6 page PDF. Branded with Dhruva watermark + client family name. n8n triggers monthly delivery.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MCP-04 -->
+
+  <div class="mcp-section">
+    <div class="mcp-header">
+      <div class="mcp-id">MCP-04</div>
+      <div class="mcp-title-wrap">
+        <div class="mcp-title">Risk Intelligence Engine</div>
+        <div class="mcp-subtitle">Market, regulatory &amp; tax signal monitoring with plain-English alerts</div>
+      </div>
+      <div class="mcp-meta">
+        <div class="mcp-quarter"><span class="dot dot-q3"></span>Build — Q3</div>
+        <div class="mcp-owner">Owner: CTO → Dev Agent</div>
+      </div>
+    </div>
+    <div class="mcp-body">
+      <div class="mcp-col t">
+        <div class="mcp-col-title">Traffic — Positioning</div>
+        <div class="task-item"><div class="task-num">T1</div><div class="task-text"><strong>Content Agent:</strong> "3 tax changes in the last 6 months that caught wealthy families off guard." Published Q2 to warm up the MCP-04 launch conversation.</div></div>
+        <div class="task-item"><div class="task-num">T2</div><div class="task-text"><strong>Sample alert demo:</strong> show a realistic risk alert — "ATO has increased audit activity for SMSFs with offshore assets. Your client XYZ may be exposed." This is the product promise in one image.</div></div>
+      </div>
+      <div class="mcp-col c">
+        <div class="mcp-col-title">Conversion — Proof Points</div>
+        <div class="task-item"><div class="task-num">C1</div><div class="task-text"><strong>Risk exposure summary:</strong> include 1 risk finding in every HNW Audit. "We found an early signal that may affect your client's property trust structure." Hook for MCP-04.</div></div>
+        <div class="task-item"><div class="task-num">C2</div><div class="task-text"><strong>Alert preview in proposal:</strong> show family office prospects 3 sample alerts relevant to their sector. Personalised. CIO researches sector, CTO generates alerts.</div></div>
+      </div>
+      <div class="mcp-col d">
+        <div class="mcp-col-title">Delivery — Build Tasks</div>
+        <div class="task-item"><div class="task-num">D1</div><div class="task-text"><strong>Feed ingestion:</strong> ATO newsroom RSS, ASIC regulatory updates, ASX announcements, RBA cash rate, federal budget tracker. n8n polls daily, stores in Supabase.</div></div>
+        <div class="task-item"><div class="task-num">D2</div><div class="task-text"><strong>Signal analysis prompt:</strong> Claude receives client profile + today's feeds. Returns: risk signal, affected entities, severity (1–5), recommended action. JSON output.</div></div>
+        <div class="task-item"><div class="task-num">D3</div><div class="task-text"><strong>Alert engine:</strong> only surface alerts with severity ≥3. De-duplicate against previously sent alerts. Store alert history per client.</div></div>
+        <div class="task-item"><div class="task-num">D4</div><div class="task-text"><strong>Delivery via n8n:</strong> daily digest email (6am AEST) + instant alert for severity 5. Route to client's preferred channel: Email / Teams / Telegram.</div></div>
+        <div class="task-item"><div class="task-num">D5</div><div class="task-text"><strong>QA validation:</strong> weekly spot-check — 5 random alerts reviewed by QA Agent for accuracy, tone, and actionability before going live.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MCP-05 -->
+
+  <div class="mcp-section">
+    <div class="mcp-header">
+      <div class="mcp-id">MCP-05</div>
+      <div class="mcp-title-wrap">
+        <div class="mcp-title">Structure &amp; Succession Mapper</div>
+        <div class="mcp-subtitle">Trust mapping, beneficiary tracking, succession gap analysis for family offices</div>
+      </div>
+      <div class="mcp-meta">
+        <div class="mcp-quarter"><span class="dot dot-q4"></span>Build — Q4</div>
+        <div class="mcp-owner">Owner: CTO → Dev Agent</div>
+      </div>
+    </div>
+    <div class="mcp-body">
+      <div class="mcp-col t">
+        <div class="mcp-col-title">Traffic — Positioning</div>
+        <div class="task-item"><div class="task-num">T1</div><div class="task-text"><strong>Content Agent:</strong> "The succession gap that cost an Australian family $4M in unexpected tax." Anonymised case study. Published Q3 to warm up Q4 launch.</div></div>
+      </div>
+      <div class="mcp-col c">
+        <div class="mcp-col-title">Conversion — Proof Points</div>
+        <div class="task-item"><div class="task-num">C1</div><div class="task-text"><strong>Free structure review:</strong> for family office pilot clients — Dhruva maps their trust/company structure and identifies 1 gap. No charge. Done during Phase 1 audit.</div></div>
+        <div class="task-item"><div class="task-num">C2</div><div class="task-text"><strong>Visual entity map:</strong> show a sample D3.js graph of a family's structure — entities, trustees, beneficiaries. This visualisation alone justifies the product for complex families.</div></div>
+      </div>
+      <div class="mcp-col d">
+        <div class="mcp-col-title">Delivery — Build Tasks</div>
+        <div class="task-item"><div class="task-num">D1</div><div class="task-text"><strong>Entity relationship model:</strong> Supabase graph — <code>entities</code>, <code>relationships</code> (trustee, beneficiary, director, shareholder), <code>documents</code> (wills, trust deeds).</div></div>
+        <div class="task-item"><div class="task-num">D2</div><div class="task-text"><strong>Intake form:</strong> secure web form for collecting structure details. Fields: entity name, type, jurisdiction, key persons, linked documents. Data encrypted at rest.</div></div>
+        <div class="task-item"><div class="task-num">D3</div><div class="task-text"><strong>Gap analysis:</strong> Claude receives full structure → returns: missing succession provisions, single points of failure, jurisdiction risk, document currency issues.</div></div>
+        <div class="task-item"><div class="task-num">D4</div><div class="task-text"><strong>D3.js force graph:</strong> visual entity map in dashboard. Nodes = entities, edges = relationships. Colour-coded by risk. Exportable as SVG/PNG.</div></div>
+        <div class="task-item"><div class="task-num">D5</div><div class="task-text"><strong>Succession report PDF:</strong> 6–10 pages. Structure map + gap findings + recommendations. Designed for the family's lawyer and accountant to act on.</div></div>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<!-- ══════════════════════════════════ TAB 4: PAPERCLIP ══ -->
+
+<section id="paperclip" class="section">
+  <div class="page-header">
+    <div class="eyebrow">Paperclip — Step-by-Step Setup</div>
+    <h1>Configure Your<br><em>Agent Network</em></h1>
+    <p>6 agents. 3 LLMs. One orchestration platform. Follow these steps in sequence. Each step takes 20–40 minutes. Total setup time: approximately 1 day.</p>
+  </div>
+
+  <!-- STEP 1 -->
+
+  <div class="step-block">
+    <div class="step-header">
+      <div class="step-num-box">1</div>
+      <div class="step-title-wrap">
+        <div class="step-title">Prepare Your API Keys &amp; Environment</div>
+        <div class="step-subtitle">Prerequisites — do this before touching Paperclip</div>
+      </div>
+      <div class="step-agent-badge badge-all">ALL AGENTS</div>
+    </div>
+    <div class="step-body">
+      <div class="step-instructions">
+        <div class="instruction">
+          <div class="ins-marker">1.1</div>
+          <div class="ins-text">Confirm you have active API keys for: <strong>Anthropic (Claude)</strong>, <strong>OpenAI (GPT-4o-mini)</strong>, and <strong>Google AI (Gemini Flash)</strong>. Store all three in <strong>Azure Key Vault</strong> — not in Paperclip's UI or any plaintext file. Reference them via environment variables.</div>
+        </div>
+        <div class="instruction">
+          <div class="ins-marker">1.2</div>
+          <div class="ins-text">In your Paperclip instance (<code>paperclip.ing</code>), navigate to <strong>Settings → Integrations → LLM Providers</strong>. Add each provider using the Key Vault reference string, not the raw key. Label them: <code>claude-primary</code>, <code>openai-mini</code>, <code>gemini-flash</code>.</div>
+        </div>
+        <div class="instruction">
+          <div class="ins-marker">1.3</div>
+          <div class="ins-text">Create a <strong>Dhruva Workspace</strong> in Paperclip. All 6 agents live inside this workspace. This keeps Dhruva agents separate from any other Paperclip projects you run (e.g. OJAS Health).</div>
+        </div>
+        <div class="instruction">
+          <div class="ins-marker">1.4</div>
+          <div class="ins-text">Set up a <strong>shared knowledge base</strong> in the Dhruva workspace. Upload these documents: Dhruva brand brief (1 page), MCP product descriptions (from this document), current client list (starts empty), and the accounting firm partner list. Agents with access to the knowledge base will answer with full context.</div>
+        </div>
+      </div>
+      <div class="callout">
+        <div class="callout-icon">✦</div>
+        <div class="callout-text"><strong>Security note:</strong> Paperclip is self-hosted — treat its config like production infrastructure. Enable 2FA on the admin account. Only Gaurav has admin access. No agent credentials are shared with clients.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+
+  <div class="step-block">
+    <div class="step-header">
+      <div class="step-num-box">2</div>
+      <div class="step-title-wrap">
+        <div class="step-title">Create the CTO Agent</div>
+        <div class="step-subtitle">Technical architecture · Claude Sonnet 4.6</div>
+      </div>
+      <div class="step-agent-badge badge-cto">CTO AGENT</div>
+    </div>
+    <div class="step-body">
+      <div class="step-instructions">
+        <div class="instruction">
+          <div class="ins-marker">2.1</div>
+          <div class="ins-text">In the Dhruva workspace, click <strong>New Agent</strong>. Name: <code>Dhruva CTO</code>. Description: <code>Technical architecture, product development, Azure infrastructure, MCP builds.</code></div>
+        </div>
+        <div class="instruction">
+          <div class="ins-marker">2.2</div>
+          <div class="ins-text">Set <strong>LLM Provider</strong> to <code>claude-primary</code>. Model: <code>claude-sonnet-4-6</code>. Max tokens: <code>8000</code>. Temperature: <code>0.3</code> (lower = more precise technical output). Enable long-context mode.</div>
+        </div>
+        <div class="instruction">
+          <div class="ins-marker">2.3</div>
+          <div class="ins-text">Paste the <strong>CTO System Prompt</strong> (from the Agent Configs tab). Do not truncate it. Add one line at the end: <code>You have access to the Dhruva shared knowledge base. Always check it before answering questions about the product or clients.</code></div>
+        </div>
+        <div class="instruction">
+          <div class="ins-marker">2.4</div>
+          <div class="ins-text">Enable <strong>Knowledge Base access</strong> — link to the Dhruva shared knowledge base created in Step 1.</div>
+        </div>
+        <div class="instruction">
+          <div class="ins-marker">2.5</div>
+          <div class="ins-text">Add <strong>Tools</strong>: (a) Code Interpreter if available in your Paperclip build, (b) HTTP tool pointed at your n8n webhook for triggering workflows, (c) File upload/read for receiving architecture docs and code files.</div>
+        </div>
+        <div class="instruction">
+          <div class="ins-marker">2.6</div>
+          <div class="ins-text">Set <strong>Sub-agent permissions</strong>: CTO can delegate to <code>Dhruva Dev</code> and <code>Dhruva QA</code> agents (configured in Steps 4 &amp; 5). This allows CTO to send a task brief to Dev Agent and receive the result back.</div>
+        </div>
+        <div class="instruction">
+          <div class="ins-marker">2.7</div>
+          <div class="ins-text"><strong>Test the CTO Agent:</strong> Prompt it — <em>"Give me the Azure Function architecture for MCP-01 (Financial Data Ingestion) using Python, pdfplumber, and Supabase. Include security considerations for ISM compliance."</em> Evaluate depth and structure of output before proceeding.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+
+  <div class="step-block">
+    <div class="step-header">
+      <div class="step-num-box">3</div>
+      <div class="step-title-wrap">
+        <div class="step-title">Create the CIO Agent</div>
+        <div class="step-subtitle">Sales, marketing &amp; commercial intelligence · Claude Sonnet 4.6</div>
+      </div>
+      <div class="step-agent-badge badge-cio">CIO AGENT</div>
+    </div>
+    <div class="step-body">
+      <div class="step-instructions">
+        <div class="instruction">
+          <div class="ins-marker">3.1</div>
+          <div class="ins-text">Create <strong>New Agent</strong>. Name: <code>Dhruva CIO</code>. Description: <code>Sales strategy, marketing content, partner pipeline, client relationships.</code></div>
+        </div>
+        <div class="instruction">
+          <div class="ins-marker">3.2</div>
+          <div class="ins-text">Set LLM to <code>claude-primary</code>, model <code>claude-sonnet-4-6</code>. Temperature: <code>0.6</code> (slightly higher for creative commercial output). Max tokens: <code>4000</code>.</div>
+        </div>
+        <div class="instruction">
+          <div class="ins-marker">3.3</div>
+          <div class="ins-text">Paste the <strong>CIO System Prompt</strong> from the Agent Configs tab. Add: <code>You have access to the Dhruva knowledge base including the current partner list and client pipeline. Check it when asked about specific firms or contacts.</code></div>
+        </div>
+        <div class="instruction">
+          <div class="ins-marker">3.4</div>
+          <div class="ins-text">Enable <strong>Tools</strong>: Web search (for researching accounting firms and prospects), Gmail draft tool (if n8n Gmail integration is active), Google Calendar read access.</div>
+        </div>
+        <div class="instruction">
+          <div class="ins-marker">3.5</div>
+          <div class="ins-text">Set <strong>Sub-agent permissions</strong>: CIO can delegate to <code>Dhruva Content</code> and <code>Dhruva Outreach</code> agents.</div>
+        </div>
+        <div class="instruction">
+          <div class="ins-marker">3.6</div>
+          <div class="ins-text"><strong>Test the CIO Agent:</strong> Prompt — <em>"I have a meeting next week with the managing partner of a 15-person accounting firm in Sydney. They have 40 business clients. Draft me a 3-touch outreach sequence and a meeting agenda."</em> Evaluate commercial sharpness.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 4 -->
+
+  <div class="step-block">
+    <div class="step-header">
+      <div class="step-num-box">4</div>
+      <div class="step-title-wrap">
+        <div class="step-title">Create Sub-Agents (Dev, QA, Content, Outreach)</div>
+        <div class="step-subtitle">4 agents · GPT-4o-mini + Gemini Flash</div>
+      </div>
+      <div class="step-agent-badge badge-all">SUB-AGENTS</div>
+    </div>
+    <div class="step-body">
+      <div class="step-instructions">
+        <div class="instruction">
+          <div class="ins-marker">4.1</div>
+          <div class="ins-text"><strong>Dev Agent:</strong> New Agent → Name: <code>Dhruva Dev</code>. LLM: <code>openai-mini</code> / <code>gpt-4o-mini</code>. Temperature: <code>0.1</code>. Max tokens: <code>4000</code>. Paste Dev Agent system prompt. Tools: code interpreter, file read/write. No sub-agent permissions.</div>
+        </div>
+        <div class="instruction">
+          <div class="ins-marker">4.2</div>
+          <div class="ins-text"><strong>QA Agent:</strong> New Agent → Name: <code>Dhruva QA</code>. LLM: <code>openai-mini</code> / <code>gpt-4o-mini</code>. Temperature: <code>0.1</code>. Paste QA system prompt. Tools: file read. Receives outputs from Dev Agent and client report drafts.</div>
+        </div>
+        <div class="instruction">
+          <div class="ins-marker">4.3</div>
+          <div class="ins-text"><strong>Content Agent:</strong> New Agent → Name: <code>Dhruva Content</code>. LLM: <code>gemini-flash</code>. Temperature: <code>0.7</code>. Max tokens: <code>2000</code>. Paste Content Agent system prompt. No tools required — pure text generation.</div>
+        </div>
+        <div class="instruction">
+          <div class="ins-marker">4.4</div>
+          <div class="ins-text"><strong>Outreach Agent:</strong> New Agent → Name: <code>Dhruva Outreach</code>. LLM: <code>openai-mini</code>. Temperature: <code>0.4</code>. Max tokens: <code>1500</code>. Paste Outreach system prompt. Tool: Gmail draft via n8n HTTP webhook.</div>
+        </div>
+        <div class="instruction">
+          <div class="ins-marker">4.5</div>
+          <div class="ins-text">For each sub-agent, <strong>set the parent agent</strong> in permissions: Dev + QA → parent is CTO. Content + Outreach → parent is CIO. This enforces the chain of command and prevents agents from being called directly without context.</div>
+        </div>
+      </div>
+      <div class="callout">
+        <div class="callout-icon">✦</div>
+        <div class="callout-text"><strong>Delegation pattern:</strong> You talk to CTO or CIO. They talk to their sub-agents. Sub-agents return results to their parent. You never prompt Dev, QA, Content, or Outreach directly — unless it's a quick test. This keeps context clean and outputs consistent.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 5 -->
+
+  <div class="step-block">
+    <div class="step-header">
+      <div class="step-num-box">5</div>
+      <div class="step-title-wrap">
+        <div class="step-title">Connect n8n Automation Workflows</div>
+        <div class="step-subtitle">Link agents to your existing n8n instance for automated triggers</div>
+      </div>
+      <div class="step-agent-badge badge-cto">CTO + CIO</div>
+    </div>
+    <div class="step-body">
+      <div class="step-instructions">
+        <div class="instruction">
+          <div class="ins-marker">5.1</div>
+          <div class="ins-text">In n8n, create a webhook node — <strong>"Paperclip Inbound"</strong>. This receives task briefs from Paperclip agents via HTTP POST. The CTO and CIO agents call this when they need to trigger an automated workflow (e.g. send report, process statement).</div>
+        </div>
+        <div class="instruction">
+          <div class="ins-marker">5.2</div>
+          <div class="ins-text">Build <strong>Workflow 1 — Monthly Report Trigger:</strong> Schedule node (1st of month, 6am AEST) → Paperclip HTTP call → CTO Agent generates client report → QA Agent validates → n8n sends PDF via Gmail to client.</div>
+        </div>
+        <div class="instruction">
+          <div class="ins-marker">5.3</div>
+          <div class="ins-text">Build <strong>Workflow 2 — Risk Alert:</strong> n8n polls ATO/ASIC RSS daily → if new item matches client profile keywords → sends to MCP-04 Azure Function → Claude analyses → if severity ≥3, n8n sends alert to client via Telegram + Email.</div>
+        </div>
+        <div class="instruction">
+          <div class="ins-marker">5.4</div>
+          <div class="ins-text">Build <strong>Workflow 3 — New Lead Handoff:</strong> dhruva.ai contact form → n8n → formats lead data → sends to CIO Agent via Paperclip → CIO generates qualification brief + outreach email draft → sends to Gaurav for review via Telegram.</div>
+        </div>
+        <div class="instruction">
+          <div class="ins-marker">5.5</div>
+          <div class="ins-text">Build <strong>Workflow 4 — Weekly CIO Review:</strong> Every Monday 8am → n8n triggers CIO Agent → "Generate this week's commercial priorities: pipeline status, content to publish, outreach follow-ups due" → sends summary to Gaurav via Telegram.</div>
+        </div>
+      </div>
+      <div class="code-block"><span class="comment"># Sample n8n Paperclip call (HTTP Request node)</span>
+<span class="key">Method:</span> <span class="val">POST</span>
+<span class="key">URL:</span> <span class="val">https://paperclip.ing/api/agents/dhruva-cio/message</span>
+<span class="key">Auth:</span> <span class="val">Bearer {{$env.PAPERCLIP_API_KEY}}</span>
+<span class="key">Body:</span>
+{
+  <span class="str">"message"</span>: <span class="str">"Weekly commercial review: Summarise pipeline status and top 3 priorities for this week."</span>,
+  <span class="str">"context"</span>: {
+    <span class="str">"date"</span>: <span class="str">"{{$today}}"</span>,
+    <span class="str">"trigger"</span>: <span class="str">"weekly_automated_review"</span>
+  }
+}</div>
+    </div>
+  </div>
+
+  <!-- STEP 6 -->
+
+  <div class="step-block">
+    <div class="step-header">
+      <div class="step-num-box">6</div>
+      <div class="step-title-wrap">
+        <div class="step-title">Your Daily Operating Rhythm</div>
+        <div class="step-subtitle">How to actually work with the agent network each day</div>
+      </div>
+      <div class="step-agent-badge badge-all">GAURAV</div>
+    </div>
+    <div class="step-body">
+      <div class="step-instructions">
+        <div class="instruction">
+          <div class="ins-marker">MON</div>
+          <div class="ins-text"><strong>8am:</strong> Receive CIO weekly brief via Telegram (auto-triggered by n8n Workflow 4). Review pipeline, approve content queue, send 1 outreach email drafted by Outreach Agent. <strong>Time: 20 minutes.</strong></div>
+        </div>
+        <div class="instruction">
+          <div class="ins-marker">DAILY</div>
+          <div class="ins-text"><strong>When technical work is needed:</strong> Open Paperclip → CTO Agent → describe the task. CTO breaks it down, delegates to Dev/QA, returns result. You review, approve, ship. <strong>No context-switching to code editors for routine tasks.</strong></div>
+        </div>
+        <div class="instruction">
+          <div class="ins-marker">DAILY</div>
+          <div class="ins-text"><strong>When commercial work is needed:</strong> Open Paperclip → CIO Agent → describe the situation. "I have a meeting with X firm tomorrow. Prep me." CIO generates agenda, background, talking points, and a follow-up email draft. <strong>Time: 5 minutes vs 45.</strong></div>
+        </div>
+        <div class="instruction">
+          <div class="ins-marker">WED</div>
+          <div class="ins-text"><strong>Content review:</strong> Content Agent publishes LinkedIn post drafts to a review queue every Wednesday. You spend 10 minutes editing and approving. Scheduler posts Thursday morning (peak accounting professional engagement time).</div>
+        </div>
+        <div class="instruction">
+          <div class="ins-marker">FRI</div>
+          <div class="ins-text"><strong>Week close:</strong> Ask CTO Agent — "What's the build status on MCP-02? What's blocking?" Receive structured status report. Update your own notes. Set next week's priorities for both agents. <strong>15 minutes. You stay the director, not the doer.</strong></div>
+        </div>
+      </div>
+      <div class="callout">
+        <div class="callout-icon">✦</div>
+        <div class="callout-text"><strong>The rule:</strong> If a task takes you more than 5 minutes to think about how to start, it belongs in Paperclip. If you've written the same type of document more than twice, the agent should have a template for it. Your job is <strong>direction, relationships, and closing</strong> — not production.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 7 -->
+
+  <div class="step-block">
+    <div class="step-header">
+      <div class="step-num-box">7</div>
+      <div class="step-title-wrap">
+        <div class="step-title">First 30 Days — Execution Sequence</div>
+        <div class="step-subtitle">Ordered task list to get from setup to first revenue</div>
+      </div>
+      <div class="step-agent-badge badge-all">LAUNCH</div>
+    </div>
+    <div class="step-body">
+      <div class="step-instructions">
+        <div class="instruction">
+          <div class="ins-marker">DAY 1–3</div>
+          <div class="ins-text">Complete Paperclip setup (Steps 1–4). Test all 6 agents with the prompts specified. <strong>Do not proceed until CTO and CIO agents produce output you'd be comfortable showing a client.</strong> Refine system prompts if needed.</div>
+        </div>
+        <div class="instruction">
+          <div class="ins-marker">DAY 4–7</div>
+          <div class="ins-text">CTO Agent: complete MCP-02 BAS Agent. Prompt: <em>"Give me the full Python implementation for the BAS GST engine and anomaly detection module per the technical spec."</em> Dev Agent builds. QA Agent validates. You review.</div>
+        </div>
+        <div class="instruction">
+          <div class="ins-marker">DAY 8–10</div>
+          <div class="ins-text">CIO Agent: generate the Partner Program outreach sequence and one-page brief. Prompt: <em>"Create a 3-touch email sequence for accounting firm partners, offering 3-month free trial of MCP-02 in exchange for testimonial and one client intro."</em></div>
+        </div>
+        <div class="instruction">
+          <div class="ins-marker">DAY 11–14</div>
+          <div class="ins-text">Content Agent: generate first 4 LinkedIn posts. CIO briefs Content Agent. Posts scheduled via n8n. dhruva.ai landing page live with CTO-built demo and CIO-written copy.</div>
+        </div>
+        <div class="instruction">
+          <div class="ins-marker">DAY 15–21</div>
+          <div class="ins-text">Send Partner Program outreach to 5 accounting firms. Outreach Agent drafts, you personalise each in &lt;2 minutes, you send. n8n tracks opens and triggers follow-up sequence at day 4 if no reply.</div>
+        </div>
+        <div class="instruction">
+          <div class="ins-marker">DAY 22–30</div>
+          <div class="ins-text">First accounting firm partner signed. Run their first client through MCP-01 + MCP-02. QA Agent validates output. CIO Agent drafts the results summary. You deliver. First revenue in.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<script>
+function show(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+
+</body>
+</html>
